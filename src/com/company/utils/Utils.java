@@ -29,8 +29,8 @@ public class Utils {
 
 
     public static void clearConsole() {
-        String value = ".\n\r";
-        for (int i = 0; i < 5; ++i) {
+        String value = "\n\r";
+        for (int i = 0; i < 2; ++i) {
             value = value + value;
             System.out.printf(value);
         }

@@ -2,25 +2,30 @@ package com.company.sprint;
 
 import com.company.models.request.CustomRequest;
 import com.company.models.request.RequestHandler;
+import com.company.models.request.RequestHandlerInterface;
+import com.company.models.request.RouteHandler;
+import com.company.discover.DiscoverCall;
+import com.company.vote.Vote;
+import org.codehaus.jackson.map.ObjectMapper;
 import sun.misc.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static com.company.utils.ValidationUtils.nullOrEmpty;
+
 public class SprintServer {
-    public SprintServer() throws IOException {
+    public SprintServer(SprintApplication sprintApplication) throws IOException {
         final ExecutorService serverExecutor = Executors.newFixedThreadPool(5);
-        final Map<String, Runnable> runnableMap = getRouteHandlers();
+        final Map<String, RequestHandlerInterface> runnableMap = getRouteHandlers(sprintApplication);
         Runnable serverTask = () -> {
             try {
                 ServerSocket socket = new ServerSocket(9776);
-                System.out.println("Waiting for requests");
                 while (true) {
                     Socket currentSocket = socket.accept();
                     serverExecutor.submit(new ClientTask(currentSocket, runnableMap));
@@ -35,30 +40,55 @@ public class SprintServer {
     }
 
 
-    private Map<String, Runnable> getRouteHandlers() {
-        Map<String, Runnable> tempMap = new HashMap<>();
+    private Map<String, RequestHandlerInterface> getRouteHandlers(SprintApplication sprintApplication) {
+        RouteHandler routeHandler = new RouteHandler();
+        //going to parse the discover call
+        //POST discover
+        routeHandler.registerRoute("/discover", (request) -> {
+            String jsonBody = request.getBody();
+            ObjectMapper objectMapper = new ObjectMapper();
+            DiscoverCall discoverCall = objectMapper.readValue(jsonBody, DiscoverCall.class);
+            if (discoverCall == null) throw new RuntimeException("Json body was empty");
+            sprintApplication.addUser(discoverCall);
+        });
 
-        final String test = "/test";
-        Runnable testRunnable = () -> {
-            System.out.println("Test");
-        };
+        //ACCEPT ROUND
+        routeHandler.registerRoute("/acceptround", (customRequest -> {
+            sprintApplication.closeCurrentRound();
+            String roundName = customRequest.getHeaders().get("round");
+            if (nullOrEmpty(roundName)) throw new RuntimeException("round value is empty or not found");
+            sprintApplication.startRound(roundName);
+        }));
 
-        final String discover = "/discover";
-        Runnable discoverRunnable = () -> {
-            System.out.println("discover");
-        };
+        //ACCEPT VOTE
+        routeHandler.registerRoute("/acceptvote", (customRequest -> {
+            String jsonBody = customRequest.getBody();
+            if (jsonBody == null) throw new RuntimeException("jsonbody was null for vote request");
+            ObjectMapper objectMapper = new ObjectMapper();
+            Vote currentVote = objectMapper.readValue(jsonBody, Vote.class);
+            sprintApplication.placeVote(currentVote);
+        }));
 
-        tempMap.put(discover, discoverRunnable);
-        tempMap.put(test, testRunnable);
-        return tempMap;
+        //DUMP
+        //DUMP VOUTES
+        routeHandler.registerRoute("/dumpvotes", (customRequest -> {
+            sprintApplication.dumpRoundMap();
+        }));
+
+        //DUMP USERS
+        routeHandler.registerRoute("/dumpusers", (customRequest -> {
+            sprintApplication.dumpUsers();
+        }));
+
+        return routeHandler.getRoutes();
     }
 
 
     public class ClientTask implements Runnable {
         Socket socket;
-        Map<String, Runnable> runnableMap;
+        Map<String, RequestHandlerInterface> runnableMap;
 
-        public ClientTask(Socket socket, Map<String, Runnable> runnableMap) {
+        public ClientTask(Socket socket, Map<String, RequestHandlerInterface> runnableMap) {
             if (socket == null || runnableMap == null) {
                 throw new RuntimeException("Socket and RunnableMap can't be null");
             }
@@ -68,7 +98,6 @@ public class SprintServer {
 
         @Override
         public void run() {
-            System.out.println("Receiving request..");
             try {
                 InputStream inputStream = this.socket.getInputStream();
                 if (inputStream == null) throw new RuntimeException("The incoming socket's inout stream was null");

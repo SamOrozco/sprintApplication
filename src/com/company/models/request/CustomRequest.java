@@ -67,7 +67,7 @@ public class CustomRequest {
     }
 
 
-    Map<String, String> getHeaders() {
+    public Map<String, String> getHeaders() {
         if (headers == null) {
             headers = new HashMap<String, String>();
         }

@@ -23,9 +23,10 @@ public class Main {
             user.teamLeader = true;
         }
         clearConsole();
-        System.out.println("Loading..");
+        System.out.println("Loading.. please wait");
         //loading because we need to get ip which takes a while
         SprintApplication sprintApplication = new SprintApplication();
+        System.out.println("Waiting for teammates to join and team leader to start..");
         sprintApplication.startServer();
         sprintApplication.sendInitRequests(user);
     }
