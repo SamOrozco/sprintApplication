@@ -8,13 +8,17 @@ import java.net.UnknownHostException;
 public class Utils {
 
     public static String getIPStringForMac() {
-        String localhost = null;
-        try {
-            localhost = InetAddress.getLocalHost().toString();
-            return localhost.substring(localhost.lastIndexOf("/") + 1, localhost.length());
-        } catch (UnknownHostException e) {
-            return "";
-        }
+        final String[] localhost = new String[1];
+        Runnable getIp = () -> {
+            try {
+                localhost[0] = InetAddress.getLocalHost().toString();
+                localhost[0].substring(localhost[0].lastIndexOf("/") + 1, localhost[0].length());
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            }
+        };
+        getIp.run();
+        return localhost[0];
     }
 
 
