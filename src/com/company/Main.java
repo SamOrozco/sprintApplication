@@ -22,13 +22,13 @@ public class Main {
         if (lastTwoChar.toLowerCase().equals("xx")) {
             user.teamLeader = true;
         }
-        clearConsole();
         System.out.println("Loading.. please wait");
         //loading because we need to get ip which takes a while
         SprintApplication sprintApplication = new SprintApplication();
+        sprintApplication.setCurrentUser(user);
         System.out.println("Waiting for teammates to join and team leader to start..");
         sprintApplication.startServer();
-        sprintApplication.sendInitRequests(user);
+        sprintApplication.listenForInputCommand(sprintApplication);
     }
 
 

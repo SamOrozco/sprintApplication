@@ -1,26 +1,33 @@
 package com.company.sprint;
 
-import com.company.models.request.CustomRequest;
-import com.company.models.request.RequestHandler;
-import com.company.models.request.RequestHandlerInterface;
-import com.company.models.request.RouteHandler;
 import com.company.discover.DiscoverCall;
+import com.company.models.User;
+import com.company.models.request.*;
+import com.company.utils.Utils;
 import com.company.vote.Vote;
+import com.sun.xml.internal.ws.util.CompletedFuture;
 import org.codehaus.jackson.map.ObjectMapper;
 import sun.misc.IOUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
+import java.util.Date;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.company.utils.ValidationUtils.nullOrEmpty;
 
 public class SprintServer {
+    SprintApplication sprintApplication;
+
     public SprintServer(SprintApplication sprintApplication) throws IOException {
+        this.sprintApplication = sprintApplication;
         final ExecutorService serverExecutor = Executors.newFixedThreadPool(5);
         final Map<String, RequestHandlerInterface> runnableMap = getRouteHandlers(sprintApplication);
         Runnable serverTask = () -> {
@@ -29,14 +36,100 @@ public class SprintServer {
                 while (true) {
                     Socket currentSocket = socket.accept();
                     serverExecutor.submit(new ClientTask(currentSocket, runnableMap));
+                    currentSocket.close();
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         };
 
+        this.startDiscoverInterval(this);
+        this.startDiscoverServer(this);
         Thread serverThread = new Thread(serverTask);
         serverThread.start();
+    }
+
+    private void startDiscoverServer(SprintServer sprintServer) {
+        final ExecutorService serverExecutor = Executors.newFixedThreadPool(1);
+        Runnable udpServerTask = () -> {
+            try {
+                byte[] contents = new byte[1000];
+                InetAddress inetAddress = InetAddress.getByName("localhost");
+                DatagramPacket datagramPacket = new DatagramPacket(contents, contents.length, inetAddress, 9776);
+                while (true) {
+                    DatagramSocket socket = new DatagramSocket(9777);
+                    socket.receive(datagramPacket);
+                    socket.close();
+                    serverExecutor.submit(() -> System.out.println("received udp"));
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        };
+
+        serverExecutor.submit(udpServerTask);
+    }
+
+
+    public void startDiscoverInterval(SprintServer sprintServer) throws SocketException {
+        //data gram socket sending the request
+        final DatagramSocket datagramSocket = new DatagramSocket(9776);
+        Timer timer = new Timer(false);
+        TimerTask timerTask = new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    sprintServer.sendDiscover(sprintServer.sprintApplication, datagramSocket);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        timer.scheduleAtFixedRate(timerTask, 0, 5000);
+    }
+
+
+    private void sendDiscover(SprintApplication sprintApplication, DatagramSocket datagramSocket) throws IOException {
+        //building discover call
+        DiscoverCall discoverCall = new DiscoverCall();
+        discoverCall.setDateSent(new Date());
+        discoverCall.setHost(sprintApplication.ip);
+        discoverCall.setLeader(sprintApplication.getCurrentUser().teamLeader);
+        discoverCall.setName(sprintApplication.getCurrentUser().name);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String jsonRequest = null;
+        String baseHost = "";
+
+        //getting ip and parsing json
+        baseHost = Utils.getBroadCastIP(sprintApplication.ip);
+        try {
+            jsonRequest = objectMapper.writeValueAsString(discoverCall);
+        } catch (IOException e) {
+            throw new RuntimeException("Error parsing discover request");
+        }
+
+        //sending requests to base ip + .1 - > .244
+        for (int i = 1; i < 255; i++) {
+            String tempHost = baseHost + "." + i;
+            HttpRequest httpRequest = new HttpRequest();
+            httpRequest.setHost(tempHost);
+            httpRequest.setPath("/discover");
+            httpRequest.addHeader("content-type", "json/application");
+            httpRequest.setMethod("POST");
+            httpRequest.setBody(jsonRequest);
+
+            String requestString = httpRequest.getHttpRequest();
+            InetAddress inetAddress = InetAddress.getByName(tempHost);
+            DatagramPacket datagramPacket = new DatagramPacket(requestString.getBytes(), requestString.getBytes().length, inetAddress, 9777);
+            datagramSocket.send(datagramPacket);
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
     }
 
 
@@ -44,17 +137,9 @@ public class SprintServer {
         RouteHandler routeHandler = new RouteHandler();
         //going to parse the discover call
         //POST discover
-        routeHandler.registerRoute("/discover", (request) -> {
-            String jsonBody = request.getBody();
-            ObjectMapper objectMapper = new ObjectMapper();
-            DiscoverCall discoverCall = objectMapper.readValue(jsonBody, DiscoverCall.class);
-            if (discoverCall == null) throw new RuntimeException("Json body was empty");
-            sprintApplication.addUser(discoverCall);
-        });
 
         //ACCEPT ROUND
         routeHandler.registerRoute("/acceptround", (customRequest -> {
-            sprintApplication.closeCurrentRound();
             String roundName = customRequest.getHeaders().get("round");
             if (nullOrEmpty(roundName)) throw new RuntimeException("round value is empty or not found");
             sprintApplication.startRound(roundName);
@@ -81,6 +166,23 @@ public class SprintServer {
         }));
 
         return routeHandler.getRoutes();
+    }
+
+
+    public void sendVote(int voteValue, SprintApplication sprintApplication) throws IOException {
+        Vote sendVote = new Vote();
+        if (sprintApplication.getCurrentUser() == null) {
+            //TODO INITIALIZE USER
+            throw new RuntimeException("User not initalized properly");
+        }
+        sendVote.name = sprintApplication.getCurrentUser().name;
+        sendVote.round = sprintApplication.currentRoundID;
+        sendVote.value = voteValue;
+        sendVote.voteTime = new Date();
+
+        for (User user : sprintApplication.getUsers().values()) {
+            user.sendVote(sendVote);
+        }
     }
 
 

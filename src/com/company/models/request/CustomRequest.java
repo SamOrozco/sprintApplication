@@ -14,6 +14,9 @@ public class CustomRequest {
     private Map<String, String> headers;
     private String body;
 
+    public CustomRequest(){
+    }
+
     public CustomRequest(String[] requestContents) {
         this.requestContents = requestContents;
         body = parseContents(requestContents);

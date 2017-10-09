@@ -1,4 +1,4 @@
-package com.company.discover;
+ package com.company.discover;
 
 import org.codehaus.jackson.annotate.JsonProperty;
 

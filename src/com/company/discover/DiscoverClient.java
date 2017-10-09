@@ -7,8 +7,4 @@ public class DiscoverClient {
     public DiscoverClient() {
 
     }
-
-    public void sendAware(User user, String ip) {
-
-    }
 }

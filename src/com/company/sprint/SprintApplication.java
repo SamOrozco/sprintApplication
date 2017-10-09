@@ -17,8 +17,9 @@ public class SprintApplication {
     private Map<String, Map<String, Vote>> roundVoteMap;
     DiscoverClient discoverClient;
     SprintServer sprintServer;
-    private String ip;
-    private String currentRoundID;
+    public String ip;
+    public String currentRoundID;
+    private User currentUser;
 
 
     public SprintApplication() {
@@ -26,12 +27,8 @@ public class SprintApplication {
         discoverClient = new DiscoverClient();
     }
 
-    public static void start() {
-    }
-
-
-    public void sendInitRequests(User user) {
-        discoverClient.sendAware(user, ip);
+    public boolean hasCurrentRound() {
+        return currentRoundID != null;
     }
 
     public void startServer() throws IOException {
@@ -52,6 +49,38 @@ public class SprintApplication {
         return roundVoteMap;
     }
 
+
+    public void vote(String[] commandArgs) throws IOException {
+        if (commandArgs.length == 1) {
+            System.out.print("Enter fibonacci vote value: ");
+            Scanner scanner = new Scanner(System.in);
+            int value = scanner.nextInt();
+            if (!validValue(value)) {
+                vote(commandArgs);
+            }
+            sprintServer.sendVote(value, this);
+        } else {
+            Integer voteValue = Integer.parseInt(commandArgs[1]);
+            sprintServer.sendVote(voteValue, this);
+        }
+
+    }
+
+    private boolean validValue(int value) {
+        Set<Integer> validValues = new HashSet<>();
+        validValues.add(1);
+        validValues.add(2);
+        validValues.add(3);
+        validValues.add(5);
+        validValues.add(8);
+        validValues.add(12);
+        validValues.add(20);
+        validValues.add(32);
+        validValues.add(52);
+        validValues.add(84);
+        return validValues.contains(value);
+    }
+
     public void placeVote(Vote vote) {
         //if vote isn't for current round ignore
         if (currentRoundID == null) {
@@ -68,8 +97,14 @@ public class SprintApplication {
     public void addUser(DiscoverCall discoverCall) {
         User user = new User();
         user.name = discoverCall.getName();
-        System.out.println(String.format("User Joined: %s", user.name));
+        String username = user.name;
+        if (username == null) return;
         user.teamLeader = discoverCall.isLeader();
+        if (user.teamLeader) {
+            System.out.println(String.format("Team Leader Joined: %s", user.name));
+        } else {
+            System.out.println(String.format("User Joined: %s", user.name));
+        }
         user.lastUpdated = discoverCall.getDateSent();
         user.host = discoverCall.getHost();
         getUsers().put(user.name, user);
@@ -79,10 +114,6 @@ public class SprintApplication {
         System.out.println(String.format("start roundname %s", roundName));
         currentRoundID = roundName;
         getRoundMap().put(roundName, new HashMap<>());
-    }
-
-    public void closeCurrentRound() {
-        System.out.println("closing current round");
     }
 
 
@@ -109,4 +140,23 @@ public class SprintApplication {
         }
     }
 
+
+    public void listenForInputCommand(SprintApplication sprintApplication) throws IOException {
+        Scanner scanner = new Scanner(System.in);
+        String command = scanner.nextLine();
+        if (command.toLowerCase().equals("quit")) {
+            return;
+        }
+        SprintClient sprintClient = new SprintClient(sprintServer);
+        sprintClient.executeCommand(command, sprintApplication);
+        listenForInputCommand(sprintApplication);
+    }
+
+    public User getCurrentUser() {
+        return currentUser;
+    }
+
+    public void setCurrentUser(User currentUser) {
+        this.currentUser = currentUser;
+    }
 }

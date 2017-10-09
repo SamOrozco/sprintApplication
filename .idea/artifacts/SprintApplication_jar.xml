@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="SprintApplication:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/SprintApplication_jar</output-path>
+    <root id="archive" name="SprintApplication.jar">
+      <element id="module-output" name="SprintApplication" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/out/artifacts/SprintApplication_jar/SprintApplication.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/jackson-all-1.7.3.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
