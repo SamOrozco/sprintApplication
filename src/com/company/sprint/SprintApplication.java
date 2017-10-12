@@ -100,18 +100,20 @@ public class SprintApplication {
         String username = user.name;
         if (username == null) return;
         user.teamLeader = discoverCall.isLeader();
-        if (user.teamLeader) {
-            System.out.println(String.format("Team Leader Joined: %s", user.name));
-        } else {
-            System.out.println(String.format("User Joined: %s", user.name));
-        }
         user.lastUpdated = discoverCall.getDateSent();
         user.host = discoverCall.getHost();
+        if (!getUsers().keySet().contains(username)) {
+            if (user.teamLeader) {
+                System.out.println(String.format("Team Leader Joined: %s", user.name));
+            } else {
+                System.out.println(String.format("User Joined: %s", user.name));
+            }
+        }
         getUsers().put(user.name, user);
     }
 
     public void startRound(String roundName) {
-        System.out.println(String.format("start roundname %s", roundName));
+        System.out.println(String.format("The leader has started round: %s", roundName));
         currentRoundID = roundName;
         getRoundMap().put(roundName, new HashMap<>());
     }
@@ -145,7 +147,7 @@ public class SprintApplication {
         Scanner scanner = new Scanner(System.in);
         String command = scanner.nextLine();
         if (command.toLowerCase().equals("quit")) {
-            return;
+            System.exit(0);
         }
         SprintClient sprintClient = new SprintClient(sprintServer);
         sprintClient.executeCommand(command, sprintApplication);

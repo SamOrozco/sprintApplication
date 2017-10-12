@@ -5,18 +5,17 @@ import com.company.models.User;
 import com.company.models.request.*;
 import com.company.utils.Utils;
 import com.company.vote.Vote;
+import com.sun.tools.hat.internal.server.HttpReader;
 import com.sun.xml.internal.ws.util.CompletedFuture;
 import org.codehaus.jackson.map.ObjectMapper;
 import sun.misc.IOUtils;
 
+import javax.xml.ws.http.HTTPBinding;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.*;
-import java.util.Date;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -36,7 +35,6 @@ public class SprintServer {
                 while (true) {
                     Socket currentSocket = socket.accept();
                     serverExecutor.submit(new ClientTask(currentSocket, runnableMap));
-                    currentSocket.close();
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -59,8 +57,12 @@ public class SprintServer {
                 while (true) {
                     DatagramSocket socket = new DatagramSocket(9777);
                     socket.receive(datagramPacket);
+                    String data = new String(datagramPacket.getData());
+                    data = data.substring(data.indexOf("{"), data.indexOf("}") + 1);
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    DiscoverCall discoverCall = objectMapper.readValue(data, DiscoverCall.class);
+                    sprintServer.sprintApplication.addUser(discoverCall);
                     socket.close();
-                    serverExecutor.submit(() -> System.out.println("received udp"));
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -78,18 +80,14 @@ public class SprintServer {
         TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
-                try {
-                    sprintServer.sendDiscover(sprintServer.sprintApplication, datagramSocket);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                sprintServer.sendDiscover(sprintServer.sprintApplication, datagramSocket);
             }
         };
         timer.scheduleAtFixedRate(timerTask, 0, 5000);
     }
 
 
-    private void sendDiscover(SprintApplication sprintApplication, DatagramSocket datagramSocket) throws IOException {
+    private void sendDiscover(SprintApplication sprintApplication, DatagramSocket datagramSocket) {
         //building discover call
         DiscoverCall discoverCall = new DiscoverCall();
         discoverCall.setDateSent(new Date());
@@ -112,24 +110,42 @@ public class SprintServer {
         //sending requests to base ip + .1 - > .244
         for (int i = 1; i < 255; i++) {
             String tempHost = baseHost + "." + i;
+            if (tempHost.equals(sprintApplication.ip)) {
+                continue;
+            }
             HttpRequest httpRequest = new HttpRequest();
             httpRequest.setHost(tempHost);
             httpRequest.setPath("/discover");
             httpRequest.addHeader("content-type", "json/application");
             httpRequest.setMethod("POST");
             httpRequest.setBody(jsonRequest);
-
-            String requestString = httpRequest.getHttpRequest();
-            InetAddress inetAddress = InetAddress.getByName(tempHost);
-            DatagramPacket datagramPacket = new DatagramPacket(requestString.getBytes(), requestString.getBytes().length, inetAddress, 9777);
-            datagramSocket.send(datagramPacket);
             try {
+                String requestString = httpRequest.getHttpRequest();
+                InetAddress inetAddress = InetAddress.getByName(tempHost);
+                DatagramPacket datagramPacket = new DatagramPacket(requestString.getBytes(), requestString.getBytes().length, inetAddress, 9777);
+                datagramSocket.send(datagramPacket);
                 Thread.sleep(50);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            } catch (InterruptedException | IOException e) {
             }
         }
 
+    }
+
+
+    public void startRound(String roundName) throws IOException {
+        Collection<User> users = sprintApplication.getUsers().values();
+        for (User user : users) {
+            String host = user.host;
+            InetAddress inetAddress = InetAddress.getByName(host);
+            Socket socket = new Socket(inetAddress, 9776);
+            HttpRequest httpRequest = new HttpRequest();
+            httpRequest.setMethod("GET");
+            httpRequest.setPath("/acceptround");
+            httpRequest.getHeaders().put("round", roundName);
+
+            httpRequest.sendHttpRequest(socket.getOutputStream());
+            socket.close();
+        }
     }
 
 
@@ -202,11 +218,11 @@ public class SprintServer {
         public void run() {
             try {
                 InputStream inputStream = this.socket.getInputStream();
-                if (inputStream == null) throw new RuntimeException("The incoming socket's inout stream was null");
+                if (inputStream == null) throw new RuntimeException("The incoming socket's input stream was null");
                 int length = inputStream.available();
                 byte[] contents = IOUtils.readFully(inputStream, length, true);
                 String requestString = new String(contents);
-                String[] split = requestString.split("\r\n");
+                String[] split = requestString.split("\n");
                 CustomRequest customRequest = new CustomRequest(split);
                 RequestHandler.handleRequest(customRequest, runnableMap);
                 socket.close();

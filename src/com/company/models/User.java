@@ -1,15 +1,12 @@
 package com.company.models;
 
+import com.company.models.request.HttpRequest;
 import com.company.vote.Vote;
-import com.sun.deploy.net.BasicHttpRequest;
-import com.sun.deploy.net.HttpRequest;
 import org.codehaus.jackson.map.ObjectMapper;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.InetAddress;
+import java.net.Socket;
 import java.util.Date;
 import java.util.List;
 
@@ -41,18 +38,9 @@ public class User {
 
 
     public void sendVote(Vote vote) throws IOException {
-        String voteUrl = host + "/acceptvote";
-        URL url = new URL(voteUrl);
-        HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
-        httpURLConnection.setRequestMethod("POST");
+        InetAddress myAddress = InetAddress.getByName(host);
+        Socket socket = new Socket(myAddress, 9776);
         ObjectMapper objectMapper = new ObjectMapper();
-        String voteJson = objectMapper.writeValueAsString(vote);
-        httpURLConnection.setDoOutput(true);
-        DataOutputStream body = new DataOutputStream(httpURLConnection.getOutputStream());
-        body.writeBytes(voteJson);
-        body.flush();
-        body.close();
-        System.out.println(httpURLConnection.getResponseCode());
     }
 
 }

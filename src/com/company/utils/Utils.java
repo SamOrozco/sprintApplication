@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.Scanner;
 
 public class Utils {
 
@@ -34,5 +35,11 @@ public class Utils {
             value = value + value;
             System.out.printf(value);
         }
+    }
+
+
+    public static String scanUserLine() {
+        Scanner scanner = new Scanner(System.in);
+        return scanner.nextLine();
     }
 }

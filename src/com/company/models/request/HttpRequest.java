@@ -1,5 +1,7 @@
 package com.company.models.request;
 
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.HashMap;
@@ -7,6 +9,7 @@ import java.util.Map;
 
 import static com.company.utils.ValidationUtils.nullOrEmpty;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class HttpRequest {
     private String method;
     private String host;
@@ -44,7 +47,7 @@ public class HttpRequest {
         if (!getHeaders().isEmpty()) {
             for (String key : getHeaders().keySet()) {
                 String value = getHeaders().get(key);
-                printWriter.println(String.format("%s : %s", key, value));
+                printWriter.println(String.format("%s:%s", key.trim(), value.trim()));
             }
         }
         if (!nullOrEmpty(body)) {
@@ -53,7 +56,7 @@ public class HttpRequest {
         }
         printWriter.flush();
 
-        System.out.println(String.format("Sending request to %, with context %s, and body %s", host, path, body));
+        System.out.println("Starting Round.. ");
     }
 
     public void addHeader(String key, String value) {
