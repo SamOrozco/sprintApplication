@@ -41,6 +41,18 @@ public class User {
         InetAddress myAddress = InetAddress.getByName(host);
         Socket socket = new Socket(myAddress, 9776);
         ObjectMapper objectMapper = new ObjectMapper();
+        String jsonBody = objectMapper.writeValueAsString(vote);
+        HttpRequest httpRequest = new HttpRequest();
+        httpRequest.setMethod("POST");
+        httpRequest.setHost(host);
+        httpRequest.setPath("/acceptvote");
+        httpRequest.setBody(jsonBody);
+        httpRequest.sendHttpRequest(socket.getOutputStream(), socket);
+        try {
+            Thread.sleep(10);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
 }

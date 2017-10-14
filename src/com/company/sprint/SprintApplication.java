@@ -56,6 +56,7 @@ public class SprintApplication {
             Scanner scanner = new Scanner(System.in);
             int value = scanner.nextInt();
             if (!validValue(value)) {
+                System.out.println("Not a valid vote. Try again.");
                 vote(commandArgs);
             }
             sprintServer.sendVote(value, this);
@@ -143,6 +144,11 @@ public class SprintApplication {
     }
 
 
+    public void clearRound() {
+        roundVoteMap = new HashMap<>();
+    }
+
+
     public void listenForInputCommand(SprintApplication sprintApplication) throws IOException {
         Scanner scanner = new Scanner(System.in);
         String command = scanner.nextLine();
@@ -153,6 +159,15 @@ public class SprintApplication {
         sprintClient.executeCommand(command, sprintApplication);
         listenForInputCommand(sprintApplication);
     }
+
+    public void addTestUser() {
+        DiscoverCall discoverCall = new DiscoverCall();
+        discoverCall.setName("User ten");
+        discoverCall.setDateSent(new Date());
+        discoverCall.setHost("connector1.ngrok.io");
+        this.addUser(discoverCall);
+    }
+
 
     public User getCurrentUser() {
         return currentUser;

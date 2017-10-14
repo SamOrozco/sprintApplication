@@ -5,18 +5,13 @@ import com.company.models.User;
 import com.company.models.request.*;
 import com.company.utils.Utils;
 import com.company.vote.Vote;
-import com.sun.tools.hat.internal.server.HttpReader;
-import com.sun.xml.internal.ws.util.CompletedFuture;
 import org.codehaus.jackson.map.ObjectMapper;
 import sun.misc.IOUtils;
 
-import javax.xml.ws.http.HTTPBinding;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.*;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -124,7 +119,7 @@ public class SprintServer {
                 InetAddress inetAddress = InetAddress.getByName(tempHost);
                 DatagramPacket datagramPacket = new DatagramPacket(requestString.getBytes(), requestString.getBytes().length, inetAddress, 9777);
                 datagramSocket.send(datagramPacket);
-                Thread.sleep(50);
+                Thread.sleep(5);
             } catch (InterruptedException | IOException e) {
             }
         }
@@ -142,10 +137,9 @@ public class SprintServer {
             httpRequest.setMethod("GET");
             httpRequest.setPath("/acceptround");
             httpRequest.getHeaders().put("round", roundName);
-
-            httpRequest.sendHttpRequest(socket.getOutputStream());
-            socket.close();
+            httpRequest.sendHttpRequest(socket.getOutputStream(), socket);
         }
+        sprintApplication.startRound(roundName);
     }
 
 
@@ -196,6 +190,8 @@ public class SprintServer {
         sendVote.value = voteValue;
         sendVote.voteTime = new Date();
 
+        //adding vote to own application
+        sprintApplication.placeVote(sendVote);
         for (User user : sprintApplication.getUsers().values()) {
             user.sendVote(sendVote);
         }

@@ -2,8 +2,10 @@ package com.company.models.request;
 
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,7 +42,7 @@ public class HttpRequest {
     }
 
 
-    public void sendHttpRequest(OutputStream outputStream) {
+    public void sendHttpRequest(OutputStream outputStream, Socket socket) throws IOException {
         if (method == null) throw new RuntimeException("Request method not defined");
         PrintWriter printWriter = new PrintWriter(outputStream);
         printWriter.println(String.format("%s %s %s", method, path, HTTP_VERSION));
@@ -54,9 +56,8 @@ public class HttpRequest {
             printWriter.println("");
             printWriter.print(body);
         }
-        printWriter.flush();
-
-        System.out.println("Starting Round.. ");
+        outputStream.close();
+        socket.close();
     }
 
     public void addHeader(String key, String value) {
