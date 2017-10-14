@@ -47,7 +47,8 @@ public class User {
         httpRequest.setHost(host);
         httpRequest.setPath("/acceptvote");
         httpRequest.setBody(jsonBody);
-        httpRequest.sendHttpRequest(socket.getOutputStream(), socket);
+        httpRequest.sendHttpRequest(socket.getOutputStream());
+        socket.close();
         try {
             Thread.sleep(10);
         } catch (InterruptedException e) {

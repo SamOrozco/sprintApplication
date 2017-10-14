@@ -148,6 +148,10 @@ public class SprintApplication {
         roundVoteMap = new HashMap<>();
     }
 
+    public void clearUsers() {
+        users = new HashMap<>();
+    }
+
 
     public void listenForInputCommand(SprintApplication sprintApplication) throws IOException {
         Scanner scanner = new Scanner(System.in);
@@ -168,6 +172,9 @@ public class SprintApplication {
         this.addUser(discoverCall);
     }
 
+    private void addSelf() {
+
+    }
 
     public User getCurrentUser() {
         return currentUser;

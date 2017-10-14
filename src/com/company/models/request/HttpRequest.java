@@ -42,7 +42,7 @@ public class HttpRequest {
     }
 
 
-    public void sendHttpRequest(OutputStream outputStream, Socket socket) throws IOException {
+    public void sendHttpRequest(OutputStream outputStream) throws IOException {
         if (method == null) throw new RuntimeException("Request method not defined");
         PrintWriter printWriter = new PrintWriter(outputStream);
         printWriter.println(String.format("%s %s %s", method, path, HTTP_VERSION));
@@ -57,7 +57,6 @@ public class HttpRequest {
             printWriter.print(body);
         }
         outputStream.close();
-        socket.close();
     }
 
     public void addHeader(String key, String value) {

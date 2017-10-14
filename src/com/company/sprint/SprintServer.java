@@ -137,7 +137,8 @@ public class SprintServer {
             httpRequest.setMethod("GET");
             httpRequest.setPath("/acceptround");
             httpRequest.getHeaders().put("round", roundName);
-            httpRequest.sendHttpRequest(socket.getOutputStream(), socket);
+            httpRequest.sendHttpRequest(socket.getOutputStream());
+            socket.close();
         }
         sprintApplication.startRound(roundName);
     }

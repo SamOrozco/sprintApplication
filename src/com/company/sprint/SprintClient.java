@@ -13,6 +13,7 @@ public class SprintClient {
 
     private static final String VOTE = "vote";
     private static final String DUMP_USERS = "dumpusers";
+    private static final String CLEAR_USERS = "clearusers";
     private static final String DUMP_VOTES = "dumpround";
     private static final String CLEAR_ROUND = "clearround";
     private static final String START_ROUND = "startround";
@@ -64,6 +65,9 @@ public class SprintClient {
                 break;
             case CLEAR:
                 Utils.clearConsole();
+                break;
+            case CLEAR_USERS:
+                sprintApplication.clearUsers();
                 break;
             default:
                 System.out.println("Command not valid");
