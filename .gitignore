@@ -1,0 +1,6 @@
+/.idea
+SprintApplication.iml
+out/
+src/main/resources/
+src/test/
+target/

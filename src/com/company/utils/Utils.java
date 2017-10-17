@@ -42,4 +42,9 @@ public class Utils {
         Scanner scanner = new Scanner(System.in);
         return scanner.nextLine();
     }
+
+
+    public static void needTeamLeaderPermissionsTo(String value) {
+        System.out.println(String.format("You need team leader permissions to: %s", value));
+    }
 }

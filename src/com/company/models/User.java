@@ -7,6 +7,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.Date;
 import java.util.List;
 
@@ -16,6 +17,7 @@ public class User {
     public boolean teamLeader;
     public String host;
     public Date lastUpdated;
+    public Socket mySocket;
 
     public User() {
     }
@@ -38,9 +40,24 @@ public class User {
 
 
     public void sendVote(Vote vote) throws IOException {
-        InetAddress myAddress = InetAddress.getByName(host);
-        Socket socket = new Socket(myAddress, 9776);
+        Socket socket = getMySocket();
         ObjectMapper objectMapper = new ObjectMapper();
+        String jsonBody = objectMapper.writeValueAsString(vote);
+        HttpRequest httpRequest = new HttpRequest();
+        httpRequest.setMethod("POST");
+        httpRequest.setHost(host);
+        httpRequest.setPath("/acceptvote");
+        httpRequest.setBody(jsonBody);
+        httpRequest.sendHttpRequest(socket.getOutputStream());
+    }
+
+
+    public Socket getMySocket() throws IOException {
+        if (mySocket == null) {
+            InetAddress myAddress = InetAddress.getByName(host);
+            mySocket = new Socket(myAddress, 9776);
+        }
+        return mySocket;
     }
 
 }

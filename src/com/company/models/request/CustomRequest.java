@@ -1,10 +1,7 @@
 package com.company.models.request;
 
-import sun.security.x509.CertAttrSet;
-
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Stream;
 
 public class CustomRequest {
     private String[] requestContents;
@@ -14,7 +11,7 @@ public class CustomRequest {
     private Map<String, String> headers;
     private String body;
 
-    public CustomRequest(){
+    public CustomRequest() {
     }
 
     public CustomRequest(String[] requestContents) {
@@ -26,6 +23,7 @@ public class CustomRequest {
     private String parseContents(String[] requestContents) {
         int index = 0;
         int length = requestContents.length;
+        if (length <= 0) System.out.println("No contents to aprs");
         for (String line : requestContents) {
             //if the line is empty we know the next line is the body
             if (line.isEmpty()) {
