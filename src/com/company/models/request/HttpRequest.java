@@ -44,18 +44,27 @@ public class HttpRequest {
 
     public void sendHttpRequest(OutputStream outputStream) throws IOException {
         if (method == null) throw new RuntimeException("Request method not defined");
-        PrintWriter printWriter = new PrintWriter(outputStream);
-        printWriter.println(String.format("%s %s %s", method, path, HTTP_VERSION));
+        StringBuilder requestBuilder = new StringBuilder();
+        requestBuilder.append(String.format("%s %s %s", method, path, HTTP_VERSION));
+        requestBuilder.append("\n");
         if (!getHeaders().isEmpty()) {
             for (String key : getHeaders().keySet()) {
                 String value = getHeaders().get(key);
-                printWriter.println(String.format("%s:%s", key.trim(), value.trim()));
+                requestBuilder.append(String.format("%s:%s", key.trim(), value.trim()));
+                requestBuilder.append("\n");
             }
         }
         if (!nullOrEmpty(body)) {
-            printWriter.println("");
-            printWriter.print(body);
+            requestBuilder.append("");
+            requestBuilder.append("\n");
+            requestBuilder.append(body);
+            requestBuilder.append("\n");
         }
+
+
+        byte[] requestContents = requestBuilder.toString().getBytes();
+        outputStream.write(requestContents);
+        outputStream.flush();
         outputStream.close();
     }
 

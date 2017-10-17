@@ -6,10 +6,10 @@ import com.company.models.request.*;
 import com.company.utils.Utils;
 import com.company.vote.Vote;
 import org.codehaus.jackson.map.ObjectMapper;
-import sun.misc.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -38,8 +38,7 @@ public class SprintServer {
 
         this.startDiscoverInterval(this);
         this.startDiscoverServer(this);
-        Thread serverThread = new Thread(serverTask);
-        serverThread.start();
+        serverExecutor.submit(serverTask);
     }
 
     private void startDiscoverServer(SprintServer sprintServer) {
@@ -216,9 +215,18 @@ public class SprintServer {
             try {
                 InputStream inputStream = this.socket.getInputStream();
                 if (inputStream == null) throw new RuntimeException("The incoming socket's input stream was null");
-                int length = inputStream.available();
-                byte[] contents = IOUtils.readFully(inputStream, length, true);
-                String requestString = new String(contents);
+                byte[] buffer = new byte[1000];
+                byte[] value;
+                int amountRead = 0;
+                for (; ; ) {
+                    int tempValue = inputStream.read(buffer);
+                    if (tempValue == -1 || tempValue == 0)
+                        break;
+                    amountRead += tempValue;
+
+                }
+                value = Arrays.copyOf(buffer, amountRead);
+                String requestString = new String(value);
                 String[] split = requestString.split("\n");
                 CustomRequest customRequest = new CustomRequest(split);
                 RequestHandler.handleRequest(customRequest, runnableMap);
