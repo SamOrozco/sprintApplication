@@ -13,13 +13,20 @@ public class SprintClient {
 
     private static final String VOTE = "vote";
     private static final String DUMP_USERS = "dumpusers";
+    private static final String DUMP_USERS_0 = "dump users";
     private static final String CLEAR_USERS = "clearusers";
+    private static final String CLEAR_USERS_0 = "clear users";
     private static final String DUMP_VOTES = "dumpround";
+    private static final String DUMP_VOTES_0 = "dump round";
     private static final String CLEAR_ROUND = "clearround";
+    private static final String CLEAR_ROUND_0 = "clear round";
     private static final String START_ROUND = "startround";
+    private static final String START_ROUND_0 = "start round";
     private static final String COMMANDS = "commands";
     private static final String ROUND = "round";
     private static final String CLEAR = "clear";
+    private static final String CLOSE_ROUND = "closeround";
+    private static final String CLOSE_ROUND_0 = "close round";
 
     public SprintClient(SprintServer sprintServer) {
         this.sprintServer = sprintServer;
@@ -36,12 +43,15 @@ public class SprintClient {
                 sprintApplication.vote(commandArgs);
                 break;
             case DUMP_USERS:
+            case DUMP_USERS_0:
                 sprintApplication.dumpUsers();
                 break;
             case DUMP_VOTES:
+            case DUMP_VOTES_0:
                 sprintApplication.dumpRoundMap();
                 break;
             case START_ROUND:
+            case START_ROUND_0:
                 if (!sprintApplication.getCurrentUser().teamLeader) {
                     needTeamLeaderPermissionsTo("Start a round");
                     return;
@@ -51,6 +61,7 @@ public class SprintClient {
                 sprintServer.startRound(roundName);
                 break;
             case CLEAR_ROUND:
+            case CLEAR_ROUND_0:
                 sprintApplication.clearRound();
                 break;
             case COMMANDS:
@@ -67,7 +78,12 @@ public class SprintClient {
                 Utils.clearConsole();
                 break;
             case CLEAR_USERS:
+            case CLEAR_USERS_0:
                 sprintApplication.clearUsers();
+                break;
+            case CLOSE_ROUND:
+            case CLOSE_ROUND_0:
+                sprintApplication.closeCurrentRound();
                 break;
             default:
                 System.out.println("Command not valid");

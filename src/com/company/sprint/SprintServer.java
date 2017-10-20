@@ -175,6 +175,13 @@ public class SprintServer {
             sprintApplication.dumpUsers();
         }));
 
+        //CLOSE ROUND
+        routeHandler.registerRoute("/closeround", (customRequest -> {
+            String currentRoundName = customRequest.getHeaders().get("round");
+            sprintApplication.closeRound(currentRoundName);
+        }));
+
+
         return routeHandler.getRoutes();
     }
 

@@ -1,16 +1,22 @@
 package com.company.sprint;
 
 import com.company.models.User;
+import com.company.models.request.HttpRequest;
+import com.company.utils.DateUtils;
+import com.company.utils.Utils;
 import com.company.vote.Vote;
 import com.company.discover.DiscoverCall;
 import com.company.discover.DiscoverClient;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.company.utils.Utils.getIPStringForMac;
+import static com.company.utils.ValidationUtils.looseStringCollectionMatch;
+import static com.company.utils.ValidationUtils.nullOrEmpty;
 
 public class SprintApplication {
     private Map<String, User> users;
@@ -91,9 +97,31 @@ public class SprintApplication {
         if (!vote.round.equals(currentRoundID)) {
             //TODO: HANDLE ROUND MISMATCH
         }
+
         Map<String, Vote> currentMap = getRoundMap().computeIfAbsent(currentRoundID, (key) -> new HashMap<>());
         currentMap.put(vote.name, vote);
+        System.out.println(String.format("Received vote from : %s", vote.name));
+        performPostVoteAction();
     }
+
+
+    /**
+     * here I am going to check and see if all users have voted.
+     */
+    private void performPostVoteAction() {
+        if (nullOrEmpty(currentRoundID)) {
+            throw new RuntimeException("Your round is invalid");
+        }
+        Map<String, Vote> currentVoteMap = getRoundMap().get(currentRoundID);
+        if (currentVoteMap == null) {
+            throw new RuntimeException("Your round is invalid");
+        }
+
+        if (looseStringCollectionMatch(currentVoteMap.keySet(), getUsers().keySet())) {
+            System.out.println("All registered have voted.");
+        }
+    }
+
 
     public void addUser(DiscoverCall discoverCall) {
         User user = new User();
@@ -127,6 +155,7 @@ public class SprintApplication {
             String value = objectMapper.writeValueAsString(getUsers());
             System.out.println(value);
         } catch (IOException e) {
+            e.printStackTrace();
             throw new RuntimeException("There was an issue parsing your users json");
         }
     }
@@ -141,6 +170,62 @@ public class SprintApplication {
         } catch (IOException e) {
             throw new RuntimeException("There was an issue parsing your Round Votes json");
         }
+    }
+
+
+    public void closeRound(String roundName) {
+        // we are going to diplay vote statistics
+
+        Utils.clearConsole();
+        Map<String, Vote> voteMap = getRoundMap().get(roundName);
+        if (voteMap == null) {
+            System.out.println("You were not in the round that the leader just closed.");
+        }
+        int yourVote = 0, totalVote = 0;
+        double voteAverage = 0.0, yourVoteDiff = 0.0;
+
+        Set<String> users = voteMap.keySet();
+        System.out.println(String.format("Round : %s", roundName));
+        System.out.println();
+        for (String username : users) {
+            Vote vote = voteMap.get(username);
+            totalVote += vote.value;
+            if (username.equals(username)) {
+                yourVote = vote.value;
+            }
+            System.out.print(String.format("%s voted : %s   @ %s", username, vote.value, DateUtils.getFormattedDateString(vote.voteTime)));
+            System.out.println();
+        }
+        System.out.println();
+        voteAverage = totalVote / users.size();
+        yourVoteDiff = voteAverage - yourVote;
+        System.out.println(String.format("Vote Average : %s", voteAverage));
+        System.out.println(String.format("Your Vote Diff : %s", yourVoteDiff));
+
+        //actions
+        currentRoundID = null;
+    }
+
+
+    public void closeCurrentRound() {
+        for (User users : getUsers().values()) {
+            String currentHost = users.host;
+            HttpRequest httpRequest = new HttpRequest();
+            httpRequest.setHost(currentHost);
+            httpRequest.setPath("/closeround");
+            httpRequest.setMethod("POST");
+            httpRequest.addHeader("round", currentRoundID);
+            try {
+                Socket tempSock = new Socket(currentHost, 9776);
+                httpRequest.sendHttpRequest(tempSock.getOutputStream());
+                tempSock.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println("There was error closing the current round");
+            }
+        }
+
+        closeRound(currentRoundID);
     }
 
 
