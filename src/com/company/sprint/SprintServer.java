@@ -178,6 +178,7 @@ public class SprintServer {
         //CLOSE ROUND
         routeHandler.registerRoute("/closeround", (customRequest -> {
             String currentRoundName = customRequest.getHeaders().get("round");
+            Utils.clearConsole();
             sprintApplication.closeRound(currentRoundName);
         }));
 

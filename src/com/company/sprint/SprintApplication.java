@@ -57,7 +57,7 @@ public class SprintApplication {
 
 
     public void vote(String[] commandArgs) throws IOException {
-        if (commandArgs.length == 1) {
+        if (commandArgs == null || commandArgs.length == 1) {
             System.out.print("Enter fibonacci vote value: ");
             Scanner scanner = new Scanner(System.in);
             int value = scanner.nextInt();
@@ -68,6 +68,10 @@ public class SprintApplication {
             sprintServer.sendVote(value, this);
         } else {
             Integer voteValue = Integer.parseInt(commandArgs[1]);
+            if (!validValue(voteValue)) {
+                System.out.println("Not a valid vote. Try again.");
+                vote(null);
+            }
             sprintServer.sendVote(voteValue, this);
         }
 
@@ -99,8 +103,8 @@ public class SprintApplication {
         }
 
         Map<String, Vote> currentMap = getRoundMap().computeIfAbsent(currentRoundID, (key) -> new HashMap<>());
+        if (!currentMap.containsKey(vote.name)) System.out.println(String.format("Received vote from : %s", vote.name));
         currentMap.put(vote.name, vote);
-        System.out.println(String.format("Received vote from : %s", vote.name));
         performPostVoteAction();
     }
 
@@ -142,6 +146,7 @@ public class SprintApplication {
     }
 
     public void startRound(String roundName) {
+        Utils.clearConsole();
         System.out.println(String.format("The leader has started round: %s", roundName));
         currentRoundID = roundName;
         getRoundMap().put(roundName, new HashMap<>());
@@ -172,11 +177,8 @@ public class SprintApplication {
         }
     }
 
-
     public void closeRound(String roundName) {
         // we are going to diplay vote statistics
-
-        Utils.clearConsole();
         Map<String, Vote> voteMap = getRoundMap().get(roundName);
         if (voteMap == null) {
             System.out.println("You were not in the round that the leader just closed.");
@@ -190,10 +192,10 @@ public class SprintApplication {
         for (String username : users) {
             Vote vote = voteMap.get(username);
             totalVote += vote.value;
-            if (username.equals(username)) {
+            if (this.currentUser.name.equals(username)) {
                 yourVote = vote.value;
             }
-            System.out.print(String.format("%s voted : %s   @ %s", username, vote.value, DateUtils.getFormattedDateString(vote.voteTime)));
+            System.out.print(String.format("| %s | voted : %s   @ %s", username, vote.value, DateUtils.getFormattedDateString(vote.voteTime)));
             System.out.println();
         }
         System.out.println();
@@ -204,6 +206,20 @@ public class SprintApplication {
 
         //actions
         currentRoundID = null;
+    }
+
+
+    public void outputMeeting() {
+        Utils.clearConsole();
+        System.out.println("****************************************************************************************");
+        Set<String> rounds = getRoundMap().keySet();
+        for (String value : rounds) {
+            System.out.println("---------------------------------------------------------------");
+            closeRound(value);
+            System.out.println();
+            System.out.println();
+        }
+        System.out.println("****************************************************************************************");
     }
 
 
@@ -225,6 +241,7 @@ public class SprintApplication {
             }
         }
 
+        Utils.clearConsole();
         closeRound(currentRoundID);
     }
 

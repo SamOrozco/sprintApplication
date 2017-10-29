@@ -18,8 +18,8 @@ public class Main {
         //getting user name
         User user = new User();
         user.name = getUserName();
-        String lastTwoChar = user.name.substring(user.name.length() - 2, user.name.length());
-        if (lastTwoChar.toLowerCase().equals("xx")) {
+        String lastChar = user.name.substring(user.name.length() - 1, user.name.length());
+        if (lastChar.toLowerCase().equals("-")) {
             user.teamLeader = true;
         }
         System.out.println("Loading.. please wait");

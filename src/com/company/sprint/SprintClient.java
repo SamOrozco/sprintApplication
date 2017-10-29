@@ -27,6 +27,8 @@ public class SprintClient {
     private static final String CLEAR = "clear";
     private static final String CLOSE_ROUND = "closeround";
     private static final String CLOSE_ROUND_0 = "close round";
+    private static final String OUTPUT_MEETING = "outmeeting";
+    private static final String OUT = "out";
 
     public SprintClient(SprintServer sprintServer) {
         this.sprintServer = sprintServer;
@@ -85,6 +87,9 @@ public class SprintClient {
             case CLOSE_ROUND_0:
                 sprintApplication.closeCurrentRound();
                 break;
+            case OUTPUT_MEETING:
+                sprintApplication.outputMeeting();
+                break;
             default:
                 System.out.println("Command not valid");
         }
@@ -96,8 +101,12 @@ public class SprintClient {
         System.out.println("`dumpusers`, this command will print to the console the current users you have in memory");
         System.out.println("`dumpround`, this command will print to the console the current round and  votes received");
         System.out.println("`clearround`, this command will clear the current round on your computer");
-        System.out.println(" -- TEAM LEADER --");
         System.out.println("`startround`, this command will propmt you then start a round");
+        System.out.println("`Close Round`, Closes the current round");
+        System.out.println("`clear`, clears the console");
+        System.out.println("`round`, outputs the current round to the console.");
+        System.out.println("`quit`, will end the current round");
+        System.out.println("`outmeeting`, will output current meeting statistics");
     }
 
 
